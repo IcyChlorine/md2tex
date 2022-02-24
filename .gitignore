@@ -1,0 +1,9 @@
+.vscode/*
+
+latex_src_template.tex
+
+*.ipynb
+
+#latex intermediate files
+*.aux
+*.synctex.gz

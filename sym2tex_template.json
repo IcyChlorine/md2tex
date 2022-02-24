@@ -1,0 +1,27 @@
+{
+	"PREAMABLE": [
+		"\\documentclass[UTF8]{ctexart}",
+		"\\usepackage{geometry}",
+		"\\geometry{a4paper,centering,scale=0.8}",
+		"",
+		"#PKG_REQUIRED#",
+		"",
+		"\\title{#TITLE#}",
+		"\\author{#AUTHOR_INFO#}",
+		"\\date{\\today}",
+		"",
+		"#NEWCOMMANDS#"
+	],
+	"DOC_BEGIN": [
+		"\\begin{document}",
+		"\t\\maketitle"
+	],
+	"DOC_END": "\\end{document}",
+	"FIGURE": [
+		"\\begin{figure}[H]",
+		"\t\\centering",
+		"\t\\includegraphics[width=1.\\textwidth]{#path#}",
+		"\t\\caption{#caption#}",
+		"\\end{figure}"
+	]
+}
