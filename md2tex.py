@@ -83,7 +83,7 @@ def md2sym(md_src): #-> intermediate format
 	global m2s
 	global_var=dict()
 
-	global_var['PKG_REQUIRED']=[]
+	global_var['PKG_REQUIRED']=set()
 	global_var['NEWCOMMANDS']=[]
 
 	md_src=md_src.split('\n')
@@ -134,12 +134,15 @@ def md2sym(md_src): #-> intermediate format
 			else:              mid_repr.append(Entry(MULTILINE_FML_END))
 			mid_repr.append(Entry(NEWLINE))
 			env['fml']=not env['fml']#进出行间公式
+			global_var['PKG_REQUIRED'].add('amsmath')#只要有公式，默认加这两个包
+			global_var['PKG_REQUIRED'].add('amssymb')
 			continue
 		if line==r'```':
 			if not env['code']: mid_repr.append(Entry(MULTILINE_CODE_BEGIN))
 			else:              mid_repr.append(Entry(MULTILINE_CODE_END))
 			mid_repr.append(Entry(NEWLINE))
 			env['code']=not env['code']#进出多行代码
+			global_var['PKG_REQUIRED'].add('listings')#为了显示代码，需要listing宏包
 			continue
 
 		if line=='' and env['fml']:
@@ -147,7 +150,7 @@ def md2sym(md_src): #-> intermediate format
 			#即忽略(不往mid_repr中加)
 			continue
 		#将\newcommand抽取出来，从而最后可以统一放到导言区
-		if line.startswith(r'\newcommand'):
+		if line.startswith(r'\newcommand') or line.startswith(r'\renewcommand'):
 			global_var['NEWCOMMANDS'].append(line)
 			continue
 
@@ -355,10 +358,10 @@ def md2sym(md_src): #-> intermediate format
 		mid_repr.append(md_src[i])
 		i+=1
 		
-	print(str(mid_repr).replace(',','\n'))
-	print('')
-	os.system('pause')
-	print('')
+	#print(str(mid_repr).replace(',','\n'))
+	#print('')
+	#os.system('pause')
+	#print('')
 
 	
 	#处理图片
@@ -372,44 +375,104 @@ def md2sym(md_src): #-> intermediate format
 			img.path=match_obj.group(2)
 			img.caption=match_obj.group(1)
 			mid_repr[i]=img
-			global_var['PKG_REQUIRED'].append('graphicx')
-			global_var['PKG_REQUIRED'].append('float')
-			
-	print(str(mid_repr).replace(',','\n'))
-	print('')
-	os.system('pause')
-	print('')
+			global_var['PKG_REQUIRED'].add('graphicx')
+			global_var['PKG_REQUIRED'].add('float')
 
-	
-	global_var['PKG_REQUIRED']=list(set(global_var['PKG_REQUIRED']))#用set进行去重
+	#print(str(mid_repr).replace(',','\n'))
+	#print('')
+	#os.system('pause')
+	#print('')
+
+	global_var['PKG_REQUIRED']=list(global_var['PKG_REQUIRED'])
 	global_var['PKG_REQUIRED'].sort()
 
-	return md_src,global_var
+	return mid_repr,global_var
 	
+def assemble_latex_components(mid_repr):
+	mid_repr_assembled=[
+		Entry(PREAMABLE), 
+		Entry(DOC_BEGIN), 
+		*mid_repr, 
+		Entry(DOC_END)
+	]
+	return mid_repr_assembled
 
+def replace_global_var(s,global_var):
+	gvar_string=dict()
+	gvar_string['TITLE']=sym2tex(global_var['TITLE'].content,global_var)
+	gvar_string['PKG_REQUIRED']='\n'.join([f"\\usepackage{{{pkg}}}" for pkg in global_var['PKG_REQUIRED']])
+	gvar_string['NEWCOMMANDS']='\n'.join(global_var['NEWCOMMANDS'])
+	gvar_string['AUTHOR_INFO']=global_var['AUTHOR_INFO']
+
+	for key in gvar_string:
+		s=s.replace('#'+key+'#',gvar_string[key])
+	s=s.replace('##','#')#handle escape characters
+	return s
 
 def sym2tex(mid_repr,global_var): #-> tex src str
 	global s2t
-	def is_symbol(entry):
-		return re.match(r"\^{4}.*\${4}",entry)
-	for i,entry in enumerate(mid_repr):
-		if not is_symbol(entry): continue
-		tmp=entry[4:-4].split('?')
-		if len(tmp)==2:
-			token,param=tmp[0],eval(tmp[1])
+	tex_src=[]
+	for entry in mid_repr:
+		if isinstance(entry,str): 
+			tex_src.append(entry)
+			continue
+
+		assert(isinstance(entry, Entry))
+		if entry.type==NEWLINE:#特殊元素
+			tex_src.append('\n')
+		elif entry.type==DELIM:
+			tex_src.append('\\begin{center}\n\t*\\quad*\\quad*\n\end{center}')
+		elif entry.type==TITLE:#标题与段落
+			pass
+		elif entry.type==SECTION:
+			tex_src.append(r'\section{'+sym2tex(entry.content,global_var)+'}')
+		elif entry.type==SUBSECTION:
+			tex_src.append(r'\subsection{'+sym2tex(entry.content,global_var)+'}')
+		elif entry.type==SUBSUBSECTION:
+			tex_src.append(r'\subsubsection{'+sym2tex(entry.content,global_var)+'}')
+		elif entry.type==ENUM_BEGIN:#枚举环境
+			tex_src.append(r'\begin{itemize}')
+		elif entry.type==ITEM:
+			tex_src.append('\t\\item ')
+		elif entry.type==ENUM_END:
+			tex_src.append(r'\end{itemize}')
+		elif entry.type==FML_BEGIN or entry.type==FML_END:#公式与代码
+			tex_src.append('$')
+		elif entry.type==MULTILINE_FML_BEGIN or entry.type==MULTILINE_FML_END:
+			tex_src.append('$$')
+		elif entry.type==CODE_BEGIN:
+			tex_src.append(r'\begin{lstlisting}')#TODO lstlisting的设置还没有考虑
+		elif entry.type==CODE_END:
+			tex_src.append(r'\end{lstlisting')#注意，这里还不支持行内代码，应为没有latex功能可以很方便地实现
+		elif entry.type==BOLD_BEGIN:
+			tex_src.append(r'\textbf{')
+		elif entry.type==ITALIC_BEGIN:
+			tex_src.append(r'\emph{')
+		elif entry.type==BOLD_ITALIC_BEGIN:
+			tex_src.append(r'\textbf{\emph{')
+		elif entry.type==BOLD_END or entry.type==ITALIC_END:
+			tex_src.append('}')
+		elif entry.type==BOLD_ITALIC_END:
+			tex_src.append('}}')
+		elif entry.type==IMAGE:#图像
+			s=s2t['FIGURE']
+			s=s.replace('#path#', entry.path)
+			s=s.replace('#caption#', entry.caption)
+			s=s.replace('##','#') #handle escape characters
+			tex_src.append(s)
+		elif entry.type==DOC_BEGIN:
+			s=s2t['DOC_BEGIN']
+			tex_src.append(replace_global_var(s,global_var))
+		elif entry.type==DOC_END:
+			s=s2t['DOC_END']
+			tex_src.append(replace_global_var(s,global_var))
+		elif entry.type==PREAMABLE:
+			s=s2t['PREAMABLE']
+			tex_src.append(replace_global_var(s,global_var))
 		else:
-			token,param=tmp[0],dict()
-		mid_repr[i]=s2t[token]
-		for var in param:#local params
-			mid_repr[i]=mid_repr[i].replace('#'+var+'#',param[var])
-	mid_repr='\n'.join(mid_repr)
-	for var in global_var:
-		if var=='PKG_REQUIRED':
-			global_var[var]=[r'\usepackage{'+pkg+'}' for pkg in global_var[var]]
-		if type(global_var[var])==list:
-			global_var[var]='\n'.join(global_var[var])
-		mid_repr=mid_repr.replace('#'+var+'#',global_var[var])
-	return mid_repr
+			print("WTF?? Unknown entry type.")
+			raise ValueError('Unknown entry type:'+entry.type)
+	return ''.join(tex_src)
 
 
 def main(argv):
@@ -420,13 +483,8 @@ def main(argv):
 
 	mid_repr,global_var=md2sym(md_src)
 
-	print(str(mid_repr).replace(',','\n'))
-
-	tmp=['PREAMABLE','DOC_BEGIN','DOC_END']
-	tmp=['^^^^'+entry+'$$$$' for entry in tmp]
-	mid_repr=[tmp[0],tmp[1]]+mid_repr+[tmp[2]]
+	mid_repr=assemble_latex_components(mid_repr)
 	global_var['AUTHOR_INFO']=r"IcyChlorine\footnote{icy\_chlorine@pku.edu.cn}"
-	global_var['PKG_REQUIRED']+=['amsmath','amssymb']
 
 	with open('tex_src.tex','w',encoding='utf8') as f:
 		f.write(sym2tex(mid_repr,global_var))
