@@ -1,6 +1,6 @@
 # md2tex
 
-![](logo/md2tex.png)
+![](md2tex.png)
 
 **md2tex** is a python tool that converts markdown source into latex source codes, while preserving most of the important formats such as titles, sections and formulas.
 
@@ -57,7 +57,6 @@ There're also some known formats that `md2tex` can't convert/can't handle proper
 + Inline code sectors(they will be left unchanged, and there's plan to support it in future versions)
 + lines begin with "### " in code environment will be falsefully recognized as section
 + Special math environment , such as `\beign{align}` in multiline formulas
-+ dollars, percentge and sharp signs in plain text cannot be correctly converted into escaped ones in latex
 + italic and bold environments that interleaves with each other(even in typora this cannot be correctly recognized, actually)
 
 ### Some additional notes
