@@ -6,6 +6,8 @@
 		"",
 		"#PKG_REQUIRED#",
 		"",
+		"#PKG_OPTIONS#",
+		"",
 		"\\title{#TITLE#}",
 		"\\author{#AUTHOR_INFO#}",
 		"\\date{\\today}",
@@ -14,7 +16,8 @@
 	],
 	"DOC_BEGIN": [
 		"\\begin{document}",
-		"\t\\maketitle"
+		"\t\\maketitle",
+		""
 	],
 	"DOC_END": "\\end{document}",
 	"FIGURE": [
@@ -23,6 +26,41 @@
 		"\t\\includegraphics[width=1.\\textwidth]{#path#}",
 		"\t\\caption{#caption#}",
 		"\\end{figure}",
+		""
+	],
+	"LISTINGS_OPTIONS": [
+		"%程序框设置",
+		"\\usepackage{color,xcolor}",
+		"\\usepackage{fontspec}",
+		"\\setmonofont{Consolas}",
+		"\\definecolor{mygreen}{rgb}{0.4,0.4,0.4}",
+		"\\definecolor{mygray}{rgb}{0.96,0.96,0.96}",
+		"\\definecolor{mymauve}{rgb}{0.58,0,0.82}",
+		"\\definecolor{dark_blue}{rgb}{0.15,0.05,0.55}",
+		"\\lstset{",
+		"\t%编程语言",
+		"\tlanguage=python,",
+		"\t%代码框的基本样式",
+		"\tframe=single,                    % 设置有边框",
+		"\tnumbers=left,                    % 设置行号",
+		"\t%字体设置",
+		"\tnumberstyle=\\footnotesize\\sffamily,% 设置行号字体（及字号）",
+		"\tbasicstyle=\\ttfamily,            % 代码正文字体",
+		"\t%颜色设置",
+		"\tbackgroundcolor=\\color{mygray},  % 代码框背景颜色",
+		"\trulesepcolor=\\color{black},      % 设置边框颜色",
+		"\tcommentstyle=\\color{mygreen},    % 设置注释颜色",
+		"\tkeywordstyle=\\color{blue},       % 设置keyword颜色",
+		"\tidentifierstyle=\\color{dark_blue},% 设置标识符颜色",
+		"\tstringstyle=\\color{violet},      % 设置字符串颜色",
+		"\t%一些排版细节",
+		"\tcolumns=fixed,                   % 字间距固定",
+		"\tbreaklines=true,                 % automatic line breaking only at whitespace",
+		"\tcaptionpos=b,                    % sets the caption-position to bottom",
+		"\ttabsize=4,                       % 把tab扩展为4个空格，默认8个太长了",
+		"\t%特殊设置",
+		"\tescapeinside={\\%*}{*)}           % if you want to add LaTeX within your code",
+		"}",
 		""
 	]
 }

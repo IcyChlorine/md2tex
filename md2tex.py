@@ -11,11 +11,19 @@ from entry import Entry
 m2s=None #标记markdown -> symbol,
 s2t=None #    symbol   -> latex 的映射关系的两个字典，初始化为空
 
+def debug_print(mid_repr):
+	if not DEBUG_PRINT: return
+	print('[')
+	for e in mid_repr:
+		print(repr(e))
+	print(']')
+	print('');os.system('pause');print('')
+
 def load_config():
 	global m2s, s2t
-	with open('md2sym_template.json','r') as f:
+	with open('md2sym_template.json','r',encoding='utf8') as f:
 		m2s=json.load(f)
-	with open('sym2tex_template.json','r') as f:
+	with open('sym2tex_template.json','r',encoding='utf8') as f:
 		s2t=json.load(f)
 
 	for key in m2s:
@@ -117,10 +125,9 @@ def md2sym(md_src): #-> intermediate format
 	}
 	#第一遍：处理粗斜体。为了避开单独成行的分割线和公式环境，就需要识别公式环境。
 	#因此又必须要维护公式环境。所以要走两遍。
-	print('----第一遍扫描：按行识别特殊元素----')
+	#print('----第一遍扫描：按行识别特殊元素----')
+	print('    (1/5) Parsing elements by lines...')
 	for line in md_src:
-		#print(line)
-
 		#单独成行的分割线
 		match_obj=re.match(r'\s*\*{3}\s*',line)
 		if match_obj and match_obj.group()==line:
@@ -137,7 +144,7 @@ def md2sym(md_src): #-> intermediate format
 			global_var['PKG_REQUIRED'].add('amsmath')#只要有公式，默认加这两个包
 			global_var['PKG_REQUIRED'].add('amssymb')
 			continue
-		if line==r'```':
+		if line.startswith('```'):
 			if not env['code']: mid_repr.append(Entry(MULTILINE_CODE_BEGIN))
 			else:              mid_repr.append(Entry(MULTILINE_CODE_END))
 			mid_repr.append(Entry(NEWLINE))
@@ -158,12 +165,10 @@ def md2sym(md_src): #-> intermediate format
 		mid_repr.append(Entry(NEWLINE))
 	mid_repr.pop(-1)#把最后额外加上的NEWLINE去掉
 
-	#print(str(mid_repr).replace(', ','\n'))
-	#print('')
-	#os.system('pause')
-	#print('')
+	debug_print(mid_repr)
 
-	print('----第二遍扫描：识别行内公式----')
+	#print('----第二遍扫描：识别行内公式----')
+	print('    (2/5) Handling inline formulas...')
 	md_src = mid_repr
 	mid_repr = []#流水线式处理，一步一步地
 	reset_env_dict(env)
@@ -192,13 +197,11 @@ def md2sym(md_src): #-> intermediate format
 				env['fml']=not env['fml']
 			mid_repr.append(part)
 			
-	#print(str(mid_repr).replace(',','\n'))
-	#print('')
-	#os.system('pause')
-	#print('')
+	debug_print(mid_repr)
 
 	#第三遍：处理粗体斜体格式问题
-	print('----第三遍扫描：处理粗斜体问题----')
+	#print('----第三遍扫描：处理粗斜体问题----')
+	print('    (3/5) Handling bold and italic texts...')
 	md_src = mid_repr
 	mid_repr = []#流水线式处理，一步一步地
 	reset_env_dict(env)
@@ -292,13 +295,11 @@ def md2sym(md_src): #-> intermediate format
 			#when textpart is fully consumed out, break.
 			if not textpart: break
 	
-	#print(str(mid_repr).replace(',','\n'))
-	#print('')
-	#os.system('pause')
-	#print('')
+	debug_print(mid_repr)
 
 	#第四遍 处理标题与段落
-	print('----第四遍扫描：处理标题与段落----')
+	#print('----第四遍扫描：处理标题与段落----')
+	print('    (4/5) Handling title and sections marks...')
 	md_src=mid_repr
 	mid_repr=[]
 	del env['bold'],env['italic'],env['bold_italic']
@@ -314,8 +315,13 @@ def md2sym(md_src): #-> intermediate format
 
 		global_var['TITLE']=title_entry
 		mid_repr=md_src[:start]+[title_entry]
+		i=end
+	else:
+		title_entry=Entry(TITLE)
+		title_entry.content=['<empty title>']
+		global_var['TITLE']=title_entry
 	
-	i=end
+	
 	while i<len(md_src):
 		entry=md_src[i]
 		if not isinstance(entry, str) or not is_line_beginner(md_src,i):
@@ -358,15 +364,12 @@ def md2sym(md_src): #-> intermediate format
 		mid_repr.append(md_src[i])
 		i+=1
 		
-	#print(str(mid_repr).replace(',','\n'))
-	#print('')
-	#os.system('pause')
-	#print('')
-
+	debug_print(mid_repr)
 	
 	#处理图片
 	#目前只能处理单行的图片
-	print('----第五遍扫描：处理图片----')
+	#print('----第五遍扫描：处理图片----')
+	print('    (5/5) Processing inserted images...')
 	for i,part in enumerate(mid_repr):
 		if not isinstance(part,str): continue
 		match_obj = re.match(r'!\[(.*)\]\((.*)\)',part)
@@ -378,10 +381,7 @@ def md2sym(md_src): #-> intermediate format
 			global_var['PKG_REQUIRED'].add('graphicx')
 			global_var['PKG_REQUIRED'].add('float')
 
-	#print(str(mid_repr).replace(',','\n'))
-	#print('')
-	#os.system('pause')
-	#print('')
+	debug_print(mid_repr)
 
 	global_var['PKG_REQUIRED']=list(global_var['PKG_REQUIRED'])
 	global_var['PKG_REQUIRED'].sort()
@@ -403,10 +403,11 @@ def replace_global_var(s,global_var):
 	gvar_string['PKG_REQUIRED']='\n'.join([f"\\usepackage{{{pkg}}}" for pkg in global_var['PKG_REQUIRED']])
 	gvar_string['NEWCOMMANDS']='\n'.join(global_var['NEWCOMMANDS'])
 	gvar_string['AUTHOR_INFO']=global_var['AUTHOR_INFO']
+	gvar_string['PKG_OPTIONS']=s2t['LISTINGS_OPTIONS'] if 'listings' in global_var['PKG_REQUIRED'] else ''
 
 	for key in gvar_string:
 		s=s.replace('#'+key+'#',gvar_string[key])
-	s=s.replace('##','#')#handle escape characters
+	s=s.replace('##','#')#handle escape characters, if there's any.
 	return s
 
 def sym2tex(mid_repr,global_var): #-> tex src str
@@ -414,7 +415,11 @@ def sym2tex(mid_repr,global_var): #-> tex src str
 	tex_src=[]
 	for entry in mid_repr:
 		if isinstance(entry,str): 
-			tex_src.append(entry)
+			ch_to_esc="\\_#$%"
+			s=entry
+			for c in ch_to_esc:
+				s=s.replace(c,'\\'+c)
+			tex_src.append(s)
 			continue
 
 		assert(isinstance(entry, Entry))
@@ -443,7 +448,7 @@ def sym2tex(mid_repr,global_var): #-> tex src str
 		elif entry.type==CODE_BEGIN:
 			tex_src.append(r'\begin{lstlisting}')#TODO lstlisting的设置还没有考虑
 		elif entry.type==CODE_END:
-			tex_src.append(r'\end{lstlisting')#注意，这里还不支持行内代码，应为没有latex功能可以很方便地实现
+			tex_src.append(r'\end{lstlisting}')#注意，这里还不支持行内代码，应为没有latex功能可以很方便地实现
 		elif entry.type==BOLD_BEGIN:
 			tex_src.append(r'\textbf{')
 		elif entry.type==ITALIC_BEGIN:
@@ -477,17 +482,29 @@ def sym2tex(mid_repr,global_var): #-> tex src str
 
 def main(argv):
 	load_config()
+	
+	input_path=argv[1]
+	if '-o' in argv:
+		idx=argv.index('-o')
+		output_path=argv[idx+1]
+	else:
+		output_path=input_path.replace('.md','.tex')
 
-	with open(argv[1],'r',encoding='utf8') as f:
+	print('(1/4) Reading configuration files...')
+	with open(input_path,'r',encoding='utf8') as f:
 		md_src=f.read()
 
+	print('(2/4) Parsing markdown sources...')
 	mid_repr,global_var=md2sym(md_src)
 
+	print('(3/4) Adding latex components to intermediate representation...')
 	mid_repr=assemble_latex_components(mid_repr)
 	global_var['AUTHOR_INFO']=r"IcyChlorine\footnote{icy\_chlorine@pku.edu.cn}"
 
-	with open('tex_src.tex','w',encoding='utf8') as f:
+	print('(4/4) Generating latex source codes...')
+	with open(output_path,'w',encoding='utf8') as f:
 		f.write(sym2tex(mid_repr,global_var))
+	print('Done! Latex source file has been written to `'+output_path+'`.')
 
 if __name__ == "__main__":
 	main(sys.argv)
