@@ -1,0 +1,60 @@
+\documentclass[UTF8]{ctexart}
+\usepackage{geometry}
+\geometry{a4paper,centering,scale=0.8}
+
+\usepackage{listings}
+
+%程序框设置
+\usepackage{color,xcolor}
+\usepackage{fontspec}
+\setmonofont{Consolas}
+\definecolor{mygreen}{rgb}{0.4,0.4,0.4}
+\definecolor{mygray}{rgb}{0.96,0.96,0.96}
+\definecolor{mymauve}{rgb}{0.58,0,0.82}
+\definecolor{dark_blue}{rgb}{0.15,0.05,0.55}
+\lstset{
+	%编程语言
+	language=python,
+	%代码框的基本样式
+	frame=single,                    % 设置有边框
+	numbers=left,                    % 设置行号
+	%字体设置
+	numberstyle=\footnotesize\sffamily,% 设置行号字体（及字号）
+	basicstyle=\ttfamily,            % 代码正文字体
+	%颜色设置
+	backgroundcolor=\color{mygray},  % 代码框背景颜色
+	rulesepcolor=\color{black},      % 设置边框颜色
+	commentstyle=\color{mygreen},    % 设置注释颜色
+	keywordstyle=\color{blue},       % 设置keyword颜色
+	identifierstyle=\color{dark_blue},% 设置标识符颜色
+	stringstyle=\color{violet},      % 设置字符串颜色
+	%一些排版细节
+	columns=fixed,                   % 字间距固定
+	breaklines=true,                 % automatic line breaking only at whitespace
+	captionpos=b,                    % sets the caption-position to bottom
+	tabsize=4,                       % 把tab扩展为4个空格，默认8个太长了
+	%特殊设置
+	escapeinside={\%*}{*)}           % if you want to add LaTeX within your code
+}
+
+
+\title{Code test}
+\author{IcyChlorine\footnote{icy\_chlorine@pku.edu.cn}}
+\date{\today}
+
+\begin{document}
+	\maketitle
+
+
+`def func(param)`
+
+\begin{lstlisting}
+import os,sys
+#This is some comment.
+print("Hello world!")
+os.system("Pause")
+\end{lstlisting}
+
+``
+
+\section{}\end{document}

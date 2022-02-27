@@ -1,0 +1,89 @@
+### Notes: *Probabilistic Cloning and Identification of Linearly Independent Quantum States*
+
+***
+
+论文作者：段路明老师，郭光灿院士
+Notes by IcyChlorine 2021-8-18
+
+***
+
+### Overview
+
+一般的幺正操作不能克隆未知的量子态，除非量子态只能从一组正交的态中挑选
+
+但这不代表加上测量之后不行！
+
+作为代价的是：
+
+1.不能可靠地克隆，而受限于成功概率$\gamma_i$; 论文作者还给出了$\gamma_i$的理论上界
+
+2.仍然要求量子态从一个已知的态的集合$\{\ket{\Psi_1},\ket{\Psi_2},\cdots,\ket{\Psi_n}\}$中选取，并且要求这些态线性无关；不过这已经从 {相互正交的态}扩展到了{线性无关的态}
+
+### Contents
+
+- No-cloning Theorem
+- 克隆一份量子态：将测量作为投影算子使用
+- 成功克隆的概率$\g_i$的上界
+- 克隆多份量子态
+- 从量子态克隆到量子态分辨
+
+***
+
+### Recall: Basic No-cloning Theorem
+
+**No-cloning Theorem: 不能可靠地克隆一个未知的量子态**
+
+准确来说，不存在幺正操作$U$，使得$\ket{\Psi_i}\ket{\Sigma}\xrightarrow{U}\ket{\Psi_i}\ket{\Psi_i},\ \forall\ket{\Psi_i}\in\mathcal{H}$
+
+### 将测量作为投影算子使用
+
+考虑幺正算符：
+$$
+%一些常用命令的预定义
+\newcommand\bra[1]{\left\langle#1\right|}
+\newcommand\ket[1]{\left|#1\right\rangle}
+\newcommand\state[1]{\ket{#1}}
+\newcommand\qinner[2]{\left\langle#1\right.\left|#2\right\rangle}
+\newcommand\qouter[2]{\left|#1\right\rangle\left\langle#2\right|}
+\renewcommand\a{\alpha}
+\renewcommand\b{\beta}
+\newcommand\g{\gamma}
+\newcommand\diag{\mathrm{diag}}
+\newcommand\abn[1]{#1_1,#1_2,\cdots,#1_n}
+
+U\big[\ket{\Psi_i}\ket{\Sigma}\ket{P_0}\big]=\sqrt{\g_i}\ket{\Psi_i}\ket{\Psi_i}\ket{P_0}+\sum_jc_{ij}\ket{\Phi_{AB}^{(j)}}\ket{P_j}\label{prob_clone_proc_EASY}
+$$
+其中$\g_i\in(0,1]\subset\mathbb{R}$,$\ket{\Phi_{AB}^{(j)}}$表示系统AB的不论什么奇奇怪怪的态——我们无所谓。
+
+如果存在这样的算符$U$，在作用到系统AB上之后再对P进行测量，
+
++ 测量得到$\ket{P_0}$说明量子态克隆成功，保留AB
++ 测量得到$\ket{P_{j\neq i}}$说明克隆失败，得到了一坨不想要的态，丢弃
+
+那么我们就有$\gamma_i$的概率能够成功克隆$\ket{\Psi_i}$.
+
+
+
+**引理2** 形如$X=[\qinner{\psi_i}{\psi_j}]$的矩阵是正定的，当且仅当向量集$\{\ket{\psi_i}\}$是线性无关的；否则，就只是半正定矩阵.
+
+证明 考虑任意向量$\alpha=[\alpha_1,\alpha_2,\cdots,\alpha_n]^T$，则
+$$
+\alpha^\dagger X\alpha=\sum_{ij}\alpha_i^*\qinner{\psi_i}{\psi_j}a_j\\
+=\qinner{\Psi}{\Psi}=||\ket{\Psi}||\ge0
+$$
+其中$\ket{\Psi}=\sum_i\alpha_i\ket{\psi_i}.$
+
+从而，如果$\ket{\psi_i}$线性相关，$\ket{\Psi}$可以是零向量，上式可以取到等号——矩阵$X$就只能是半正定矩阵；
+
+反之，如果$\ket{\psi_i}$线性无关，上式就永远取不到等号，$X$就是彻底的正定矩阵.
+
+
+
+**证明**：（1）考虑$\langle\eqref{prob_clone_proc_EASY}_i|\eqref{prob_clone_proc_EASY}_j\rangle$拼起来构成的矩阵方程
+$$
+X^{(1)}=\sqrt\Gamma X^{(2)}\sqrt\Gamma^\dagger+CC^\dagger
+$$
+其中$X^{(1)}=[\qinner{\Psi_i}{\Psi_j}]$为正定矩阵，$\sqrt\Gamma=\diag\{\sqrt{\g_1},\sqrt{\g_2},\cdots,\sqrt{\g_n}\}=\sqrt\Gamma^\dagger$,$X^{(2)}=\left[\qinner{\Psi_i}{\Psi_j}^2\right]$
+
+***
+
