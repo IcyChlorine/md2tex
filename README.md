@@ -4,6 +4,8 @@
 
 **md2tex** is a python tool that converts markdown source into latex source codes, while preserving most of the important formats such as titles, sections and formulas.
 
+Currently md2tex is in **beta ver**.
+
 ### Initiative
 
 **Latex** is the standard and most powerful typesetting software within the domain of science and technology, but it is relatively difficult to write latex codes. On the other hand, **markdown** is a lightweight mark language that is easier to edit. Thanks to `typora`, markdown can be rendered in real-time and make its editing much easier. Lightweight as it is though, markdown still supports most elements for writing an elegant article or technical note, such as subtitle, formula and code environment, enumerate environment and etc. 
