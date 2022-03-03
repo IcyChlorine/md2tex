@@ -1,5 +1,5 @@
 {
-	"PREAMABLE": [
+	"PREAMBLE": [
 		"\\documentclass[UTF8]{ctexart}",
 		"\\usepackage{geometry}",
 		"\\geometry{a4paper,centering,scale=0.8}",

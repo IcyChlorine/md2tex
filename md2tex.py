@@ -390,7 +390,7 @@ def md2sym(md_src): #-> intermediate format
 	
 def assemble_latex_components(mid_repr):
 	mid_repr_assembled=[
-		Entry(PREAMABLE), 
+		Entry(PREAMBLE), 
 		Entry(DOC_BEGIN), 
 		*mid_repr, 
 		Entry(DOC_END)
@@ -415,10 +415,14 @@ def sym2tex(mid_repr,global_var): #-> tex src str
 	tex_src=[]
 	for entry in mid_repr:
 		if isinstance(entry,str): 
-			ch_to_esc="\\_#$%"
-			s=entry
-			for c in ch_to_esc:
-				s=s.replace(c,'\\'+c)
+			ch_to_esc="\\_#$%{}"
+			s=''
+			#latex中\\是换行；因此反斜杠的转移是\backslash，要特殊处理
+			for c in entry:
+				if c in ch_to_esc:
+					s+=('\\'+c) if c!='\\' else '$\\backslash$'
+				else:
+					s+=c
 			tex_src.append(s)
 			continue
 
@@ -471,8 +475,8 @@ def sym2tex(mid_repr,global_var): #-> tex src str
 		elif entry.type==DOC_END:
 			s=s2t['DOC_END']
 			tex_src.append(replace_global_var(s,global_var))
-		elif entry.type==PREAMABLE:
-			s=s2t['PREAMABLE']
+		elif entry.type==PREAMBLE:
+			s=s2t['PREAMBLE']
 			tex_src.append(replace_global_var(s,global_var))
 		else:
 			print("WTF?? Unknown entry type.")
