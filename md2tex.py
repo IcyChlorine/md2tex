@@ -3,42 +3,12 @@ import sys
 import json
 import re
 
-from soupsieve import match
-
 from constants import *
+from utils import *
 from entry import Entry
 
 m2s=None #标记markdown -> symbol,
 s2t=None #    symbol   -> latex 的映射关系的两个字典，初始化为空
-
-def debug_print(mid_repr):
-	if not DEBUG_PRINT: return
-	print('[')
-	for e in mid_repr:
-		print(repr(e))
-	print(']')
-	print('');os.system('pause');print('')
-
-def load_config():
-	global m2s, s2t
-	with open('md2sym_template.json','r',encoding='utf8') as f:
-		m2s=json.load(f)
-	with open('sym2tex_template.json','r',encoding='utf8') as f:
-		s2t=json.load(f)
-
-	for key in m2s:
-		if type(m2s[key])==list:
-			m2s[key]='\n'.join(m2s[key])
-	for key in s2t:
-		if type(s2t[key])==list:
-			s2t[key]='\n'.join(s2t[key])
-
-def reset_env_dict(env):
-	for key in env:
-		env[key]=False
-
-def is_line_delim(entry_or_str):
-	return isinstance(entry_or_str,Entry) and entry_or_str.type==NEWLINE
 
 def get_line_from_mid_repr(mid_repr,here,return_start_and_end=False):
 	#输入mid_repr和其中一个元素的位置（下标），
@@ -86,7 +56,6 @@ def is_line_beginner(mid_repr,here):
 	start,end=get_line_from_mid_repr(mid_repr,here,return_start_and_end=True)
 	return here==start
 	
-
 def md2sym(md_src): #-> intermediate format
 	global m2s
 	global_var=dict()
@@ -413,16 +382,12 @@ def replace_global_var(s,global_var):
 def sym2tex(mid_repr,global_var): #-> tex src str
 	global s2t
 	tex_src=[]
+	env={'fml':False,'code':False}#为了判断plaintext，又要加个变量维护公式和代码环境...好累啊
 	for entry in mid_repr:
 		if isinstance(entry,str): 
-			ch_to_esc="\\_#$%{}"
-			s=''
-			#latex中\\是换行；因此反斜杠的转移是\backslash，要特殊处理
-			for c in entry:
-				if c in ch_to_esc:
-					s+=('\\'+c) if c!='\\' else '$\\backslash$'
-				else:
-					s+=c
+			s=entry
+			is_plain_text = not env['fml'] and not env['code']
+			if is_plain_text: s=escape_special_ch(entry)
 			tex_src.append(s)
 			continue
 
@@ -447,12 +412,15 @@ def sym2tex(mid_repr,global_var): #-> tex src str
 			tex_src.append(r'\end{itemize}')
 		elif entry.type==FML_BEGIN or entry.type==FML_END:#公式与代码
 			tex_src.append('$')
+			env['fml']=True if entry.type==FML_BEGIN else False
 		elif entry.type==MULTILINE_FML_BEGIN or entry.type==MULTILINE_FML_END:
 			tex_src.append('$$')
+			env['fml']=True if entry.type==MULTILINE_FML_BEGIN else False
 		elif entry.type==CODE_BEGIN:
 			tex_src.append(r'\begin{lstlisting}')#TODO lstlisting的设置还没有考虑
 		elif entry.type==CODE_END:
 			tex_src.append(r'\end{lstlisting}')#注意，这里还不支持行内代码，应为没有latex功能可以很方便地实现
+			env['code']=True if entry.type==CODE_BEGIN else False
 		elif entry.type==BOLD_BEGIN:
 			tex_src.append(r'\textbf{')
 		elif entry.type==ITALIC_BEGIN:
@@ -485,17 +453,47 @@ def sym2tex(mid_repr,global_var): #-> tex src str
 
 
 def main(argv):
-	load_config()
+	#将调用的md2tex.py的当前位置和md2tex.py所在的实际位置都加到path中
+	#这样后面才能正确地找到配置文件	
+	sys.path.append(os.getcwd())
+	#注意，py xxx.py [args] 这样的调用中，在xxx.py中接收到的argv是 [xxx.py [args]]这样的，'py'命令不会出现在argv中
+	prog_path=argv[0]
+	prog_path=prog_path.replace('/','\\')
+	try:
+		prog_path=prog_path[:prog_path.rindex('\\')]
+		sys.path.append(prog_path)
+		#print(prog_path)
+		#print(sys.path)
+		#TODO: 这样做无法处理以相对路径运行.py程序的情况。也许以后有空会来解决这个问题。
+	except ValueError: #substring not found
+		#说明cwd与.py程序所在路径是一致的，不需要额外将程序路径加入sys.path
+		pass
+
+	#用户可以自行设定格式文件
+	md2sym_cfg=DEFAULT_MD2SYM_CONFIG
+	sym2tex_cfg=DEFAULT_SYM2TEX_CONFIG
+	if '-cfg' in argv or '-c' in argv:
+		idx=argv.index('-cfg') if '-cfg' in argv else argv.index('-c')
+		sym2tex_cfg=argv[idx+1]
+		#输入的-cfg参数，默认是用于sym2tex的，因为这个用的多
+
+	global m2s,s2t
+	m2s,s2t = load_config(
+		md2sym_cfg=md2sym_cfg,
+		sym2tex_cfg=sym2tex_cfg
+	)
 	
-	input_path=argv[1]
+
+
+	input_filename=argv[1]
 	if '-o' in argv:
 		idx=argv.index('-o')
-		output_path=argv[idx+1]
+		output_filename=argv[idx+1]
 	else:
-		output_path=input_path.replace('.md','.tex')
+		output_filename=input_filename.replace('.md','.tex')
 
 	print('(1/4) Reading configuration files...')
-	with open(input_path,'r',encoding='utf8') as f:
+	with open(input_filename,'r',encoding='utf8') as f:
 		md_src=f.read()
 
 	print('(2/4) Parsing markdown sources...')
@@ -506,9 +504,9 @@ def main(argv):
 	global_var['AUTHOR_INFO']=r"IcyChlorine\footnote{icy\_chlorine@pku.edu.cn}"
 
 	print('(4/4) Generating latex source codes...')
-	with open(output_path,'w',encoding='utf8') as f:
+	with open(output_filename,'w',encoding='utf8') as f:
 		f.write(sym2tex(mid_repr,global_var))
-	print('Done! Latex source file has been written to `'+output_path+'`.')
+	print('Done! Latex source file has been written to `'+output_filename+'`.')
 
 if __name__ == "__main__":
 	main(sys.argv)
