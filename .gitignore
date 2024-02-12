@@ -4,8 +4,13 @@ latex_src_template.tex
 
 *.ipynb
 
-#latex intermediate files
+# latex intermediate files
 *.aux
 *.synctex.gz
 
 *.pyc
+
+# generated latex files
+*.tex
+
+!listings_options_template.tex
